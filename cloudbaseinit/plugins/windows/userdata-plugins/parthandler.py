@@ -16,9 +16,11 @@
 #    under the License.
 
 import imp
+import importlib
 import os
 
 from cloudbaseinit.openstack.common import log as logging
+from cloudbaseinit.osutils import factory as osutils_factory
 
 LOG = logging.getLogger("cloudbaseinit")
 
@@ -39,7 +41,7 @@ def load_from_file(filepath, function):
         py_mod = imp.load_compiled(mod_name, filepath)
 
     if hasattr(py_mod, function):
-        return getattr(__import__(mod_name), function)
+        return getattr(importlib.import_module(mod_name), function)
 
 
 class PartHandlerScriptHandler:
@@ -50,6 +52,7 @@ class PartHandlerScriptHandler:
         self.parent_set = parent_set
 
     def process(self, part):
+        os.makedirs(self.parent_set.path + "/part-handler/")
         handler_path = (self.parent_set.path + "/part-handler/" +
                         part.get_filename())
         with open(handler_path, "wb") as f:
