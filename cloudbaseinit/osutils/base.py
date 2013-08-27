@@ -72,6 +72,9 @@ class BaseOSUtils(object):
     def get_config_value(self, name, section=None):
         pass
 
+    def delete_config_value(self, section):
+        pass
+
     def wait_for_boot_completion(self):
         pass
 

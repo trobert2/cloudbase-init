@@ -116,3 +116,7 @@ class HttpService(base.BaseMetadataService):
                 return False
             else:
                 raise
+
+    def get_instance_id(self, data_type, version):
+        meta_data = self.get_meta_data(data_type, version)
+        return meta_data["uuid"]

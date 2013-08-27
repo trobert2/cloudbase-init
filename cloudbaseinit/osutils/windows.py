@@ -295,6 +295,15 @@ class WindowsUtils(base.BaseOSUtils):
         except WindowsError:
             return None
 
+    def delete_config_value(self, section):
+        try:
+            with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                                 self._config_key, 0,
+                                 _winreg.KEY_ALL_ACCESS) as key:
+                _winreg.DeleteKey(key, section)
+        except WindowsError:
+            return None
+
     def wait_for_boot_completion(self):
         try:
             with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,

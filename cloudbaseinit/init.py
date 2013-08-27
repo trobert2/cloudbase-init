@@ -36,6 +36,17 @@ class InitManager(object):
         osutils.set_config_value(plugin_name, status,
                                  self._PLUGINS_CONFIG_SECTION)
 
+    def _delete_plugin_status(self, osutils):
+        osutils.delete_config_value(self._PLUGINS_CONFIG_SECTION)
+
+    def _get_reg_instance(self, osutils):
+        return osutils.get_config_value('instance_id',
+                                        'Instance')
+
+    def _set_instance_id(self, osutils, metadata_id):
+        osutils.set_config_value('instance_id', metadata_id,
+                                 'Instance')
+
     def _exec_plugin(self, osutils, service, plugin):
         plugin_name = plugin.get_name()
 
@@ -84,9 +95,17 @@ class InitManager(object):
         LOG.info('Metadata service loaded: \'%s\'' %
                  service.get_name())
 
+        metadata_id = service.get_instance_id('openstack', 'latest')
+        registry_id = self._get_reg_instance(osutils)
         plugins = plugins_factory.PluginFactory().load_plugins()
 
         reboot_required = False
+
+        if metadata_id != registry_id:
+            LOG.debug('Found new instance ID, deleting plugin status values')
+            self._delete_plugin_status(osutils)
+            self._set_instance_id(osutils, metadata_id)
+
         try:
             for plugin in plugins:
                 if self._check_plugin_os_requirements(osutils, plugin):
