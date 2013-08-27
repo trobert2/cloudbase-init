@@ -96,3 +96,6 @@ class BaseOSUtils(object):
 
     def get_volume_label(self, drive):
         pass
+
+    def open_file(self, path, mode):
+        return open(path, mode)

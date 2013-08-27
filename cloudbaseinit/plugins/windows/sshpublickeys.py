@@ -46,7 +46,7 @@ class SetUserSSHPublicKeysPlugin(base.BasePlugin):
             os.makedirs(user_ssh_dir)
 
         authorized_keys_path = os.path.join(user_ssh_dir, "authorized_keys")
-        with open(authorized_keys_path, 'w') as f:
+        with osutils.open_file(authorized_keys_path, 'w') as f:
             public_keys = meta_data['public_keys']
             for k in public_keys:
                 f.write(public_keys[k])
