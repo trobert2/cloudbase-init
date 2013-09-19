@@ -56,7 +56,7 @@ class ShellScriptHandler:
             return False
 
         try:
-            with open(target_path, 'wb') as f:
+            with osutils.open_file(target_path, 'wb') as f:
                 f.write(part.get_payload())
             (out, err, ret_val) = osutils.execute_process(args, shell)
 
