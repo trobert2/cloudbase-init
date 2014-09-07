@@ -14,18 +14,21 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import _winreg
 import ctypes
 import os
 import re
+import sys
 import time
-import win32process
-import win32security
-import wmi
 
-from ctypes import windll
-from ctypes import wintypes
-from win32com import client
+if sys.platform == 'win32':
+    import _winreg
+    import win32process
+    import win32security
+    import wmi
+
+    from ctypes import windll
+    from ctypes import wintypes
+    from win32com import client
 
 from cloudbaseinit.openstack.common import log as logging
 from cloudbaseinit.osutils import base
@@ -33,214 +36,215 @@ from cloudbaseinit.utils.windows import network
 
 LOG = logging.getLogger(__name__)
 
-advapi32 = windll.advapi32
-kernel32 = windll.kernel32
-netapi32 = windll.netapi32
-userenv = windll.userenv
-iphlpapi = windll.iphlpapi
-Ws2_32 = windll.Ws2_32
-setupapi = windll.setupapi
-msvcrt = ctypes.cdll.msvcrt
+if sys.platform == 'win32':
+    advapi32 = windll.advapi32
+    kernel32 = windll.kernel32
+    netapi32 = windll.netapi32
+    userenv = windll.userenv
+    iphlpapi = windll.iphlpapi
+    Ws2_32 = windll.Ws2_32
+    setupapi = windll.setupapi
+    msvcrt = ctypes.cdll.msvcrt
 
 
-class Win32_PROFILEINFO(ctypes.Structure):
-    _fields_ = [
-        ('dwSize',          wintypes.DWORD),
-        ('dwFlags',         wintypes.DWORD),
-        ('lpUserName',      wintypes.LPWSTR),
-        ('lpProfilePath',   wintypes.LPWSTR),
-        ('lpDefaultPath',   wintypes.LPWSTR),
-        ('lpServerName',    wintypes.LPWSTR),
-        ('lpPolicyPath',    wintypes.LPWSTR),
-        ('hprofile',        wintypes.HANDLE)
-    ]
+    class Win32_PROFILEINFO(ctypes.Structure):
+        _fields_ = [
+            ('dwSize',          wintypes.DWORD),
+            ('dwFlags',         wintypes.DWORD),
+            ('lpUserName',      wintypes.LPWSTR),
+            ('lpProfilePath',   wintypes.LPWSTR),
+            ('lpDefaultPath',   wintypes.LPWSTR),
+            ('lpServerName',    wintypes.LPWSTR),
+            ('lpPolicyPath',    wintypes.LPWSTR),
+            ('hprofile',        wintypes.HANDLE)
+        ]
 
 
-class Win32_LOCALGROUP_MEMBERS_INFO_3(ctypes.Structure):
-    _fields_ = [
-        ('lgrmi3_domainandname', wintypes.LPWSTR)
-    ]
+    class Win32_LOCALGROUP_MEMBERS_INFO_3(ctypes.Structure):
+        _fields_ = [
+            ('lgrmi3_domainandname', wintypes.LPWSTR)
+        ]
 
 
-class Win32_MIB_IPFORWARDROW(ctypes.Structure):
-    _fields_ = [
-        ('dwForwardDest', wintypes.DWORD),
-        ('dwForwardMask', wintypes.DWORD),
-        ('dwForwardPolicy', wintypes.DWORD),
-        ('dwForwardNextHop', wintypes.DWORD),
-        ('dwForwardIfIndex', wintypes.DWORD),
-        ('dwForwardType', wintypes.DWORD),
-        ('dwForwardProto', wintypes.DWORD),
-        ('dwForwardAge', wintypes.DWORD),
-        ('dwForwardNextHopAS', wintypes.DWORD),
-        ('dwForwardMetric1', wintypes.DWORD),
-        ('dwForwardMetric2', wintypes.DWORD),
-        ('dwForwardMetric3', wintypes.DWORD),
-        ('dwForwardMetric4', wintypes.DWORD),
-        ('dwForwardMetric5', wintypes.DWORD)
-    ]
+    class Win32_MIB_IPFORWARDROW(ctypes.Structure):
+        _fields_ = [
+            ('dwForwardDest', wintypes.DWORD),
+            ('dwForwardMask', wintypes.DWORD),
+            ('dwForwardPolicy', wintypes.DWORD),
+            ('dwForwardNextHop', wintypes.DWORD),
+            ('dwForwardIfIndex', wintypes.DWORD),
+            ('dwForwardType', wintypes.DWORD),
+            ('dwForwardProto', wintypes.DWORD),
+            ('dwForwardAge', wintypes.DWORD),
+            ('dwForwardNextHopAS', wintypes.DWORD),
+            ('dwForwardMetric1', wintypes.DWORD),
+            ('dwForwardMetric2', wintypes.DWORD),
+            ('dwForwardMetric3', wintypes.DWORD),
+            ('dwForwardMetric4', wintypes.DWORD),
+            ('dwForwardMetric5', wintypes.DWORD)
+        ]
 
 
-class Win32_MIB_IPFORWARDTABLE(ctypes.Structure):
-    _fields_ = [
-        ('dwNumEntries', wintypes.DWORD),
-        ('table', Win32_MIB_IPFORWARDROW * 1)
-    ]
+    class Win32_MIB_IPFORWARDTABLE(ctypes.Structure):
+        _fields_ = [
+            ('dwNumEntries', wintypes.DWORD),
+            ('table', Win32_MIB_IPFORWARDROW * 1)
+        ]
 
 
-class Win32_OSVERSIONINFOEX_W(ctypes.Structure):
-    _fields_ = [
-        ('dwOSVersionInfoSize', wintypes.DWORD),
-        ('dwMajorVersion', wintypes.DWORD),
-        ('dwMinorVersion', wintypes.DWORD),
-        ('dwBuildNumber', wintypes.DWORD),
-        ('dwPlatformId', wintypes.DWORD),
-        ('szCSDVersion', wintypes.WCHAR * 128),
-        ('wServicePackMajor', wintypes.DWORD),
-        ('wServicePackMinor', wintypes.DWORD),
-        ('wSuiteMask', wintypes.DWORD),
-        ('wProductType', wintypes.BYTE),
-        ('wReserved', wintypes.BYTE)
-    ]
+    class Win32_OSVERSIONINFOEX_W(ctypes.Structure):
+        _fields_ = [
+            ('dwOSVersionInfoSize', wintypes.DWORD),
+            ('dwMajorVersion', wintypes.DWORD),
+            ('dwMinorVersion', wintypes.DWORD),
+            ('dwBuildNumber', wintypes.DWORD),
+            ('dwPlatformId', wintypes.DWORD),
+            ('szCSDVersion', wintypes.WCHAR * 128),
+            ('wServicePackMajor', wintypes.DWORD),
+            ('wServicePackMinor', wintypes.DWORD),
+            ('wSuiteMask', wintypes.DWORD),
+            ('wProductType', wintypes.BYTE),
+            ('wReserved', wintypes.BYTE)
+        ]
 
 
-class GUID(ctypes.Structure):
-    _fields_ = [
-        ("data1", ctypes.wintypes.DWORD),
-        ("data2", ctypes.wintypes.WORD),
-        ("data3", ctypes.wintypes.WORD),
-        ("data4", ctypes.c_byte * 8)]
+    class GUID(ctypes.Structure):
+        _fields_ = [
+            ("data1", ctypes.wintypes.DWORD),
+            ("data2", ctypes.wintypes.WORD),
+            ("data3", ctypes.wintypes.WORD),
+            ("data4", ctypes.c_byte * 8)]
 
-    def __init__(self, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8):
-        self.data1 = l
-        self.data2 = w1
-        self.data3 = w2
-        self.data4[0] = b1
-        self.data4[1] = b2
-        self.data4[2] = b3
-        self.data4[3] = b4
-        self.data4[4] = b5
-        self.data4[5] = b6
-        self.data4[6] = b7
-        self.data4[7] = b8
-
-
-class Win32_SP_DEVICE_INTERFACE_DATA(ctypes.Structure):
-    _fields_ = [
-        ('cbSize', wintypes.DWORD),
-        ('InterfaceClassGuid', GUID),
-        ('Flags', wintypes.DWORD),
-        ('Reserved', ctypes.POINTER(wintypes.ULONG))
-    ]
+        def __init__(self, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8):
+            self.data1 = l
+            self.data2 = w1
+            self.data3 = w2
+            self.data4[0] = b1
+            self.data4[1] = b2
+            self.data4[2] = b3
+            self.data4[3] = b4
+            self.data4[4] = b5
+            self.data4[5] = b6
+            self.data4[6] = b7
+            self.data4[7] = b8
 
 
-class Win32_SP_DEVICE_INTERFACE_DETAIL_DATA_W(ctypes.Structure):
-    _fields_ = [
-        ('cbSize', wintypes.DWORD),
-        ('DevicePath', ctypes.c_byte * 2)
-    ]
+    class Win32_SP_DEVICE_INTERFACE_DATA(ctypes.Structure):
+        _fields_ = [
+            ('cbSize', wintypes.DWORD),
+            ('InterfaceClassGuid', GUID),
+            ('Flags', wintypes.DWORD),
+            ('Reserved', ctypes.POINTER(wintypes.ULONG))
+        ]
 
 
-class Win32_STORAGE_DEVICE_NUMBER(ctypes.Structure):
-    _fields_ = [
-        ('DeviceType', wintypes.DWORD),
-        ('DeviceNumber', wintypes.DWORD),
-        ('PartitionNumber', wintypes.DWORD)
-    ]
+    class Win32_SP_DEVICE_INTERFACE_DETAIL_DATA_W(ctypes.Structure):
+        _fields_ = [
+            ('cbSize', wintypes.DWORD),
+            ('DevicePath', ctypes.c_byte * 2)
+        ]
 
 
-msvcrt.malloc.argtypes = [ctypes.c_size_t]
-msvcrt.malloc.restype = ctypes.c_void_p
+    class Win32_STORAGE_DEVICE_NUMBER(ctypes.Structure):
+        _fields_ = [
+            ('DeviceType', wintypes.DWORD),
+            ('DeviceNumber', wintypes.DWORD),
+            ('PartitionNumber', wintypes.DWORD)
+        ]
 
-msvcrt.free.argtypes = [ctypes.c_void_p]
-msvcrt.free.restype = None
 
-kernel32.VerifyVersionInfoW.argtypes = [
-    ctypes.POINTER(Win32_OSVERSIONINFOEX_W),
-    wintypes.DWORD, wintypes.ULARGE_INTEGER]
-kernel32.VerifyVersionInfoW.restype = wintypes.BOOL
+    msvcrt.malloc.argtypes = [ctypes.c_size_t]
+    msvcrt.malloc.restype = ctypes.c_void_p
 
-kernel32.VerSetConditionMask.argtypes = [wintypes.ULARGE_INTEGER,
-                                         wintypes.DWORD,
-                                         wintypes.BYTE]
-kernel32.VerSetConditionMask.restype = wintypes.ULARGE_INTEGER
+    msvcrt.free.argtypes = [ctypes.c_void_p]
+    msvcrt.free.restype = None
 
-kernel32.SetComputerNameExW.argtypes = [ctypes.c_int, wintypes.LPCWSTR]
-kernel32.SetComputerNameExW.restype = wintypes.BOOL
+    kernel32.VerifyVersionInfoW.argtypes = [
+        ctypes.POINTER(Win32_OSVERSIONINFOEX_W),
+        wintypes.DWORD, wintypes.ULARGE_INTEGER]
+    kernel32.VerifyVersionInfoW.restype = wintypes.BOOL
 
-kernel32.GetLogicalDriveStringsW.argtypes = [wintypes.DWORD, wintypes.LPWSTR]
-kernel32.GetLogicalDriveStringsW.restype = wintypes.DWORD
+    kernel32.VerSetConditionMask.argtypes = [wintypes.ULARGE_INTEGER,
+                                             wintypes.DWORD,
+                                             wintypes.BYTE]
+    kernel32.VerSetConditionMask.restype = wintypes.ULARGE_INTEGER
 
-kernel32.GetDriveTypeW.argtypes = [wintypes.LPCWSTR]
-kernel32.GetDriveTypeW.restype = wintypes.UINT
+    kernel32.SetComputerNameExW.argtypes = [ctypes.c_int, wintypes.LPCWSTR]
+    kernel32.SetComputerNameExW.restype = wintypes.BOOL
 
-kernel32.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD,
-                                 wintypes.DWORD, wintypes.LPVOID,
-                                 wintypes.DWORD, wintypes.DWORD,
-                                 wintypes.HANDLE]
-kernel32.CreateFileW.restype = wintypes.HANDLE
+    kernel32.GetLogicalDriveStringsW.argtypes = [wintypes.DWORD, wintypes.LPWSTR]
+    kernel32.GetLogicalDriveStringsW.restype = wintypes.DWORD
 
-kernel32.DeviceIoControl.argtypes = [wintypes.HANDLE, wintypes.DWORD,
-                                     wintypes.LPVOID, wintypes.DWORD,
-                                     wintypes.LPVOID, wintypes.DWORD,
-                                     ctypes.POINTER(wintypes.DWORD),
-                                     wintypes.LPVOID]
-kernel32.DeviceIoControl.restype = wintypes.BOOL
+    kernel32.GetDriveTypeW.argtypes = [wintypes.LPCWSTR]
+    kernel32.GetDriveTypeW.restype = wintypes.UINT
 
-kernel32.GetProcessHeap.argtypes = []
-kernel32.GetProcessHeap.restype = wintypes.HANDLE
+    kernel32.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD,
+                                     wintypes.DWORD, wintypes.LPVOID,
+                                     wintypes.DWORD, wintypes.DWORD,
+                                     wintypes.HANDLE]
+    kernel32.CreateFileW.restype = wintypes.HANDLE
 
-# Note: wintypes.ULONG must be replaced with a 64 bit variable on x64
-kernel32.HeapAlloc.argtypes = [wintypes.HANDLE, wintypes.DWORD,
-                               wintypes.ULONG]
-kernel32.HeapAlloc.restype = wintypes.LPVOID
+    kernel32.DeviceIoControl.argtypes = [wintypes.HANDLE, wintypes.DWORD,
+                                         wintypes.LPVOID, wintypes.DWORD,
+                                         wintypes.LPVOID, wintypes.DWORD,
+                                         ctypes.POINTER(wintypes.DWORD),
+                                         wintypes.LPVOID]
+    kernel32.DeviceIoControl.restype = wintypes.BOOL
 
-kernel32.HeapFree.argtypes = [wintypes.HANDLE, wintypes.DWORD,
-                              wintypes.LPVOID]
-kernel32.HeapFree.restype = wintypes.BOOL
+    kernel32.GetProcessHeap.argtypes = []
+    kernel32.GetProcessHeap.restype = wintypes.HANDLE
 
-iphlpapi.GetIpForwardTable.argtypes = [
-    ctypes.POINTER(Win32_MIB_IPFORWARDTABLE),
-    ctypes.POINTER(wintypes.ULONG),
-    wintypes.BOOL]
-iphlpapi.GetIpForwardTable.restype = wintypes.DWORD
+    # Note: wintypes.ULONG must be replaced with a 64 bit variable on x64
+    kernel32.HeapAlloc.argtypes = [wintypes.HANDLE, wintypes.DWORD,
+                                   wintypes.ULONG]
+    kernel32.HeapAlloc.restype = wintypes.LPVOID
 
-Ws2_32.inet_ntoa.restype = ctypes.c_char_p
+    kernel32.HeapFree.argtypes = [wintypes.HANDLE, wintypes.DWORD,
+                                  wintypes.LPVOID]
+    kernel32.HeapFree.restype = wintypes.BOOL
 
-setupapi.SetupDiGetClassDevsW.argtypes = [ctypes.POINTER(GUID),
-                                          wintypes.LPCWSTR,
-                                          wintypes.HANDLE,
-                                          wintypes.DWORD]
-setupapi.SetupDiGetClassDevsW.restype = wintypes.HANDLE
+    iphlpapi.GetIpForwardTable.argtypes = [
+        ctypes.POINTER(Win32_MIB_IPFORWARDTABLE),
+        ctypes.POINTER(wintypes.ULONG),
+        wintypes.BOOL]
+    iphlpapi.GetIpForwardTable.restype = wintypes.DWORD
 
-setupapi.SetupDiEnumDeviceInterfaces.argtypes = [
-    wintypes.HANDLE,
-    wintypes.LPVOID,
-    ctypes.POINTER(GUID),
-    wintypes.DWORD,
-    ctypes.POINTER(Win32_SP_DEVICE_INTERFACE_DATA)]
-setupapi.SetupDiEnumDeviceInterfaces.restype = wintypes.BOOL
+    Ws2_32.inet_ntoa.restype = ctypes.c_char_p
 
-setupapi.SetupDiGetDeviceInterfaceDetailW.argtypes = [
-    wintypes.HANDLE,
-    ctypes.POINTER(Win32_SP_DEVICE_INTERFACE_DATA),
-    ctypes.POINTER(Win32_SP_DEVICE_INTERFACE_DETAIL_DATA_W),
-    wintypes.DWORD,
-    ctypes.POINTER(wintypes.DWORD),
-    wintypes.LPVOID]
-setupapi.SetupDiGetDeviceInterfaceDetailW.restype = wintypes.BOOL
+    setupapi.SetupDiGetClassDevsW.argtypes = [ctypes.POINTER(GUID),
+                                              wintypes.LPCWSTR,
+                                              wintypes.HANDLE,
+                                              wintypes.DWORD]
+    setupapi.SetupDiGetClassDevsW.restype = wintypes.HANDLE
 
-setupapi.SetupDiDestroyDeviceInfoList.argtypes = [wintypes.HANDLE]
-setupapi.SetupDiDestroyDeviceInfoList.restype = wintypes.BOOL
+    setupapi.SetupDiEnumDeviceInterfaces.argtypes = [
+        wintypes.HANDLE,
+        wintypes.LPVOID,
+        ctypes.POINTER(GUID),
+        wintypes.DWORD,
+        ctypes.POINTER(Win32_SP_DEVICE_INTERFACE_DATA)]
+    setupapi.SetupDiEnumDeviceInterfaces.restype = wintypes.BOOL
 
-VER_MAJORVERSION = 1
-VER_MINORVERSION = 2
-VER_BUILDNUMBER = 4
+    setupapi.SetupDiGetDeviceInterfaceDetailW.argtypes = [
+        wintypes.HANDLE,
+        ctypes.POINTER(Win32_SP_DEVICE_INTERFACE_DATA),
+        ctypes.POINTER(Win32_SP_DEVICE_INTERFACE_DETAIL_DATA_W),
+        wintypes.DWORD,
+        ctypes.POINTER(wintypes.DWORD),
+        wintypes.LPVOID]
+    setupapi.SetupDiGetDeviceInterfaceDetailW.restype = wintypes.BOOL
 
-VER_GREATER_EQUAL = 3
+    setupapi.SetupDiDestroyDeviceInfoList.argtypes = [wintypes.HANDLE]
+    setupapi.SetupDiDestroyDeviceInfoList.restype = wintypes.BOOL
 
-GUID_DEVINTERFACE_DISK = GUID(0x53f56307L, 0xb6bf, 0x11d0, 0x94, 0xf2,
-                              0x00, 0xa0, 0xc9, 0x1e, 0xfb, 0x8b)
+    VER_MAJORVERSION = 1
+    VER_MINORVERSION = 2
+    VER_BUILDNUMBER = 4
+
+    VER_GREATER_EQUAL = 3
+
+    GUID_DEVINTERFACE_DISK = GUID(0x53f56307L, 0xb6bf, 0x11d0, 0x94, 0xf2,
+                                  0x00, 0xa0, 0xc9, 0x1e, 0xfb, 0x8b)
 
 
 class WindowsUtils(base.BaseOSUtils):

@@ -31,12 +31,15 @@ if sys.platform == 'win32':
 
     from ctypes import windll
     from ctypes import wintypes
-    from cloudbaseinit.osutils import windows as windows_utils
+
+from cloudbaseinit.osutils import windows as windows_utils
 
 CONF = cfg.CONF
 
+_ctypes_mock = mock.MagicMock()
+mock_dict = {'ctypes': _ctypes_mock}
 
-@unittest.skipUnless(sys.platform == "win32", "requires Windows")
+# @unittest.skipUnless(sys.platform == "win32", "requires Windows")
 class WindowsUtilsTest(unittest.TestCase):
     '''Tests for the windows utils class'''
 
@@ -48,7 +51,12 @@ class WindowsUtilsTest(unittest.TestCase):
     _SECTION = 'fake_section'
     _USERNAME = 'Admin'
 
+    @mock.patch.dict(sys.modules, mock_dict)
     def setUp(self):
+        windows_utils.wintypes = mock.MagicMock()
+        windows_utils.windll = mock.MagicMock()
+        windows_utils.advapi32 = mock.MagicMock()
+
         self._winutils = windows_utils.WindowsUtils()
         self._conn = mock.MagicMock()
 
@@ -224,23 +232,27 @@ class WindowsUtilsTest(unittest.TestCase):
     def test_set_password_expiration_no_object(self):
         self._test_set_user_password_expiration(fake_obj=None)
 
-    def _test_get_user_sid_and_domain(self, ret_val):
+    @mock.patch.object(ctypes, "sizeof")
+    @mock.patch.object(ctypes, "create_string_buffer")
+    @mock.patch.object(ctypes, "create_unicode_buffer")
+    @mock.patch.object(ctypes, "byref")
+    def _test_get_user_sid_and_domain(self, mock_byref,
+                                      mock_create_unicode_buffer,
+                                      mock_create_string_buffer,
+                                      mock_sizeof, ret_val):
         cbSid = mock.Mock()
         sid = mock.Mock()
         size = 1024
         cchReferencedDomainName = mock.Mock()
         domainName = mock.Mock()
-        sidNameUse = mock.Mock()
 
-        ctypes.create_string_buffer = mock.MagicMock(return_value=sid)
-        ctypes.sizeof = mock.MagicMock(return_value=size)
-        wintypes.DWORD = mock.MagicMock(return_value=cchReferencedDomainName)
-        ctypes.create_unicode_buffer = mock.MagicMock(return_value=domainName)
+        mock_create_string_buffer.return_value = sid
+        mock_sizeof.return_value = size
 
-        ctypes.byref = mock.MagicMock()
+        windows_utils.wintypes.DWORD.return_value = cchReferencedDomainName
+        mock_create_unicode_buffer.return_value = domainName
 
-        windll.advapi32.LookupAccountNameW = mock.MagicMock(
-            return_value=ret_val)
+        windows_utils.windll.advapi32.LookupAccountNameW.return_value = ret_val
         if ret_val is None:
             self.assertRaises(
                 Exception, self._winutils._get_user_sid_and_domain,
@@ -248,10 +260,10 @@ class WindowsUtilsTest(unittest.TestCase):
         else:
             response = self._winutils._get_user_sid_and_domain(self._USERNAME)
 
-            windll.advapi32.LookupAccountNameW.assert_called_with(
-                0, unicode(self._USERNAME), sid, ctypes.byref(cbSid),
-                domainName, ctypes.byref(cchReferencedDomainName),
-                ctypes.byref(sidNameUse))
+            windows_utils.advapi32.LookupAccountNameW.assert_called_with(
+                0, unicode(self._USERNAME), sid, mock_byref.return_value,
+                domainName, mock_byref.return_value,
+                mock_byref.return_value)
             self.assertEqual(response, (sid, domainName.value))
 
     def test_get_user_sid_and_domain(self):

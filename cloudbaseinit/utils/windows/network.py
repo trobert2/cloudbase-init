@@ -12,14 +12,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import _winreg
 import ctypes
+import sys
 
-from ctypes import wintypes
+if sys.platform == "win32":
+    import _winreg
 
-from cloudbaseinit.utils.windows import iphlpapi
-from cloudbaseinit.utils.windows import kernel32
-from cloudbaseinit.utils.windows import ws2_32
+    from ctypes import wintypes
+
+    from cloudbaseinit.utils.windows import iphlpapi
+    from cloudbaseinit.utils.windows import kernel32
+    from cloudbaseinit.utils.windows import ws2_32
 
 
 def _format_mac_address(phys_address, phys_address_len):
