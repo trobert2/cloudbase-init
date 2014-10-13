@@ -19,6 +19,7 @@ from oslo.config import cfg
 from cloudbaseinit.openstack.common import log as logging
 from cloudbaseinit.osutils import factory as osutils_factory
 from cloudbaseinit.plugins import base
+from cloudbaseinit.utils.windows import security
 from cloudbaseinit.utils.windows import winrmconfig
 from cloudbaseinit.utils.windows import x509
 
@@ -62,16 +63,21 @@ class ConfigWinRMListenerPlugin(base.BasePlugin):
 
     def execute(self, service, shared_data):
         osutils = osutils_factory.get_os_utils()
+        security_utils = security.WindowsSecurityUtils(osutils)
 
         if not self._check_winrm_service(osutils):
             return (base.PLUGIN_EXECUTE_ON_NEXT_BOOT, False)
 
-        should_disable_uac = osutils.should_disable_uac()
+        should_disable_uac = osutils.check_os_version(6, 0) \
+            and not osutils.check_os_version(6, 2) \
+            and not security_utils.get_local_account_token_filter_policy()
+
         LOG.debug("should_disable_uac is %d" % should_disable_uac)
 
         try:
             if should_disable_uac:
-                osutils.set_local_account_token_filter_policy(enable=True)
+                security_utils.set_local_account_token_filter_policy(
+                    enable=True)
 
             winrm_config = winrmconfig.WinRMConfig()
             winrm_config.set_auth_config(basic=CONF.winrm_enable_basic_auth)
@@ -98,6 +104,7 @@ class ConfigWinRMListenerPlugin(base.BasePlugin):
 
         finally:
             if should_disable_uac:
-                osutils.set_local_account_token_filter_policy(enable=False)
+                security_utils.set_local_account_token_filter_policy(
+                    enable=False)
 
         return (base.PLUGIN_EXECUTION_DONE, False)

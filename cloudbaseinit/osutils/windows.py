@@ -288,8 +288,6 @@ class WindowsUtils(base.BaseOSUtils):
     ComputerNamePhysicalDnsHostname = 5
 
     _config_key = 'SOFTWARE\\Cloudbase Solutions\\Cloudbase-Init\\'
-    _uac_key = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System"
-    _uac_key_name = "LocalAccountTokenFilterPolicy"
     _service_name = 'cloudbase-init'
 
     _FW_IP_PROTOCOL_TCP = 6
@@ -564,11 +562,6 @@ class WindowsUtils(base.BaseOSUtils):
 
         return reboot_required
 
-    def should_disable_uac(self):
-        return self.check_os_version(6, 0) \
-            and not self.check_os_version(6, 2) \
-            and not self.get_local_account_token_filter_policy()
-
     def _set_reg_key(self, key, name, value):
         with winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, key) as key_name:
             if type(value) == int:
@@ -576,23 +569,6 @@ class WindowsUtils(base.BaseOSUtils):
             else:
                 regtype = winreg.REG_SZ
             winreg.SetValueEx(key_name, name, 0, regtype, value)
-
-    def _set_uac(self, disable_uac=True):
-        self._set_reg_key(self._uac_key, self._uac_key_name, int(disable_uac))
-
-    def set_local_account_token_filter_policy(self, enable=True):
-        self._set_uac(enable)
-
-    def get_local_account_token_filter_policy(self):
-        key_name = self._uac_key
-        name = self._uac_key_name
-        try:
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                                key_name) as key:
-                (value, regtype) = winreg.QueryValueEx(key, name)
-                return value
-        except WindowsError:
-            return False
 
     def _get_config_key_name(self, section):
         key_name = self._config_key

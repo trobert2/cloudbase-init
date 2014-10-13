@@ -1355,3 +1355,26 @@ class WindowsUtilsTest(unittest.TestCase):
     def test_set_ntp_client_config_sysnative_exception(self):
         self._test_set_ntp_client_config(sysnative=False,
                                          ret_val='fake return value')
+
+    def _test_set_reg_key(self, value):
+        key = mock.sentinel.key
+        name = mock.sentinel.name
+        value = value
+        if type(value) == int:
+            regtype = self._winreg_mock.REG_DWORD
+        else:
+            regtype = self._winreg_mock.REG_SZ
+
+        self._winutils._set_reg_key(key, name, value)
+
+        self._winreg_mock.CreateKey.assert_called_once_with(
+            self._winreg_mock.HKEY_LOCAL_MACHINE, key)
+        self._winreg_mock.SetValueEx.assert_called_once_with(
+            self._winreg_mock.CreateKey.return_value.__enter__(),
+            name, 0, regtype, value)
+
+    def test_set_reg_key_int(self):
+        self._test_set_reg_key(value=123)
+
+    def test_set_reg_key_other_type(self):
+        self._test_set_reg_key(value=mock.sentinel.value)

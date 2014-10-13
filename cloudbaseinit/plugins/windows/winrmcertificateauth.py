@@ -19,6 +19,7 @@ from cloudbaseinit.openstack.common import log as logging
 from cloudbaseinit.osutils import factory as osutils_factory
 from cloudbaseinit.plugins import base
 from cloudbaseinit.plugins import constants
+from cloudbaseinit.utils.windows import security
 from cloudbaseinit.utils.windows import winrmconfig
 from cloudbaseinit.utils.windows import x509
 
@@ -55,12 +56,16 @@ class ConfigWinRMCertificateAuthPlugin(base.BasePlugin):
             return (base.PLUGIN_EXECUTION_DONE, False)
 
         osutils = osutils_factory.get_os_utils()
-        should_disable_uac = osutils.should_disable_uac()
+        security_utils = security.WindowsSecurityUtils(osutils)
+        should_disable_uac = osutils.check_os_version(6, 0) \
+            and not osutils.check_os_version(6, 2) \
+            and not security_utils.get_local_account_token_filter_policy()
         LOG.debug("should_disable_uac is %d" % should_disable_uac)
 
         try:
             if should_disable_uac:
-                osutils.set_local_account_token_filter_policy(enable=True)
+                security_utils.set_local_account_token_filter_policy(
+                    enable=True)
 
             winrm_config = winrmconfig.WinRMConfig()
             winrm_config.set_auth_config(certificate=True)
@@ -88,6 +93,7 @@ class ConfigWinRMCertificateAuthPlugin(base.BasePlugin):
 
         finally:
             if should_disable_uac:
-                osutils.set_local_account_token_filter_policy(enable=False)
+                security_utils.set_local_account_token_filter_policy(
+                    enable=False)
 
         return (base.PLUGIN_EXECUTION_DONE, False)
