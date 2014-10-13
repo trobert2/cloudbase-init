@@ -66,27 +66,38 @@ class ConfigWinRMListenerPlugin(base.BasePlugin):
         if not self._check_winrm_service(osutils):
             return (base.PLUGIN_EXECUTE_ON_NEXT_BOOT, False)
 
-        winrm_config = winrmconfig.WinRMConfig()
-        winrm_config.set_auth_config(basic=CONF.winrm_enable_basic_auth)
+        should_disable_uac = osutils.should_disable_uac()
+        LOG.debug("should_disable_uac is %d" % should_disable_uac)
 
-        cert_manager = x509.CryptoAPICertManager()
-        cert_thumbprint = cert_manager.create_self_signed_cert(
-            self._cert_subject)
+        try:
+            if should_disable_uac:
+                osutils.set_local_account_token_filter_policy(enable=True)
 
-        protocol = winrmconfig.LISTENER_PROTOCOL_HTTPS
+            winrm_config = winrmconfig.WinRMConfig()
+            winrm_config.set_auth_config(basic=CONF.winrm_enable_basic_auth)
 
-        if winrm_config.get_listener(protocol=protocol):
-            winrm_config.delete_listener(protocol=protocol)
+            cert_manager = x509.CryptoAPICertManager()
+            cert_thumbprint = cert_manager.create_self_signed_cert(
+                self._cert_subject)
 
-        winrm_config.create_listener(
-            cert_thumbprint=cert_thumbprint,
-            protocol=protocol)
+            protocol = winrmconfig.LISTENER_PROTOCOL_HTTPS
 
-        listener_config = winrm_config.get_listener(protocol=protocol)
-        listener_port = listener_config.get("Port")
+            if winrm_config.get_listener(protocol=protocol):
+                winrm_config.delete_listener(protocol=protocol)
 
-        rule_name = "WinRM %s" % protocol
-        osutils.firewall_create_rule(rule_name, listener_port,
-                                     osutils.PROTOCOL_TCP)
+            winrm_config.create_listener(
+                cert_thumbprint=cert_thumbprint,
+                protocol=protocol)
+
+            listener_config = winrm_config.get_listener(protocol=protocol)
+            listener_port = listener_config.get("Port")
+
+            rule_name = "WinRM %s" % protocol
+            osutils.firewall_create_rule(rule_name, listener_port,
+                                         osutils.PROTOCOL_TCP)
+
+        finally:
+            if should_disable_uac:
+                osutils.set_local_account_token_filter_policy(enable=False)
 
         return (base.PLUGIN_EXECUTION_DONE, False)
