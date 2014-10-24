@@ -208,7 +208,7 @@ class CryptoAPICertManager(object):
         if base64_cert_data.endswith(x509constants.PEM_FOOTER):
             base64_cert_data = base64_cert_data[:len(base64_cert_data) -
                                                 len(x509constants.PEM_FOOTER)]
-        return base64_cert_data.replace("\n", "")
+        return base64_cert_data.decode('utf-8').replace("\n", "")
 
     def import_cert(self, cert_data, machine_keyset=True,
                     store_name=STORE_NAME_MY):

@@ -707,9 +707,9 @@ class WindowsUtils(base.BaseOSUtils):
                 while i < forward_table.dwNumEntries:
                     row = table[i]
                     routing_table.append((
-                        Ws2_32.inet_ntoa(row.dwForwardDest),
-                        Ws2_32.inet_ntoa(row.dwForwardMask),
-                        Ws2_32.inet_ntoa(row.dwForwardNextHop),
+                        Ws2_32.inet_ntoa(row.dwForwardDest).decode(),
+                        Ws2_32.inet_ntoa(row.dwForwardMask).decode(),
+                        Ws2_32.inet_ntoa(row.dwForwardNextHop).decode(),
                         row.dwForwardIfIndex,
                         row.dwForwardMetric1))
                     i += 1
