@@ -32,7 +32,7 @@ class WindowsUtilsTest(unittest.TestCase):
 
     _CONFIG_NAME = 'FakeConfig'
     _DESTINATION = '192.168.192.168'
-    _GATEWAY = '10.7.1.1'
+    _GATEWAY = b'10.7.1.1'
     _NETMASK = '255.255.255.0'
     _PASSWORD = 'Passw0rd'
     _SECTION = 'fake_section'
@@ -867,17 +867,18 @@ class WindowsUtilsTest(unittest.TestCase):
         mock_get_ipv4_routing_table.return_value = [routing_table]
         response = self._winutils.get_default_gateway()
         mock_get_ipv4_routing_table.assert_called_once_with()
-        if routing_table[0] == '0.0.0.0':
-            self.assertEqual((routing_table[3], routing_table[2]), response)
+        if routing_table[0] == '0.0.0.0'.encode():
+            self.assertEqual((routing_table[3].decode(),
+                              routing_table[2].decode()), response)
         else:
             self.assertEqual((None, None), response)
 
     def test_get_default_gateway(self):
-        routing_table = ['0.0.0.0', '1.1.1.1', self._GATEWAY, '8.8.8.8']
+        routing_table = [b'0.0.0.0', b'1.1.1.1', self._GATEWAY, b'8.8.8.8']
         self._test_get_default_gateway(routing_table=routing_table)
 
     def test_get_default_gateway_error(self):
-        routing_table = ['1.1.1.1', '1.1.1.1', self._GATEWAY, '8.8.8.8']
+        routing_table = [b'1.1.1.1', b'1.1.1.1', self._GATEWAY, b'8.8.8.8']
         self._test_get_default_gateway(routing_table=routing_table)
 
     @mock.patch('cloudbaseinit.osutils.windows.WindowsUtils'

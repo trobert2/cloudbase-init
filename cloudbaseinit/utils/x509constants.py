@@ -12,5 +12,5 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-PEM_HEADER = "-----BEGIN CERTIFICATE-----"
-PEM_FOOTER = "-----END CERTIFICATE-----"
+PEM_HEADER = "-----BEGIN CERTIFICATE-----".encode()
+PEM_FOOTER = "-----END CERTIFICATE-----".encode()

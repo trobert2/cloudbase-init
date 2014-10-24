@@ -661,7 +661,8 @@ class WindowsUtils(base.BaseOSUtils):
         default_routes = [r for r in self._get_ipv4_routing_table()
                           if r[0] == '0.0.0.0']
         if default_routes:
-            return (default_routes[0][3], default_routes[0][2])
+            return (default_routes[0][3],
+                    default_routes[0][2])
         else:
             return (None, None)
 
@@ -707,9 +708,9 @@ class WindowsUtils(base.BaseOSUtils):
                 while i < forward_table.dwNumEntries:
                     row = table[i]
                     routing_table.append((
-                        Ws2_32.inet_ntoa(row.dwForwardDest),
-                        Ws2_32.inet_ntoa(row.dwForwardMask),
-                        Ws2_32.inet_ntoa(row.dwForwardNextHop),
+                        Ws2_32.inet_ntoa(row.dwForwardDest).decode(),
+                        Ws2_32.inet_ntoa(row.dwForwardMask).decode(),
+                        Ws2_32.inet_ntoa(row.dwForwardNextHop).decode(),
                         row.dwForwardIfIndex,
                         row.dwForwardMetric1))
                     i += 1
