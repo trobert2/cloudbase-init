@@ -59,6 +59,10 @@ class NetworkConfigPlugin(plugin_base.BasePlugin):
             content_name = content_path.rsplit('/', 1)[-1]
             debian_network_conf = service.get_content(content_name)
 
+            if debian_network_conf:
+                debian_network_conf = debian_network_conf.decode(
+                    encoding='utf-8')
+
             LOG.debug('network config content:\n%s' % debian_network_conf)
 
             # TODO(alexpilotti): implement a proper grammar

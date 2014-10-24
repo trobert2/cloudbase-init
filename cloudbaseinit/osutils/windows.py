@@ -659,9 +659,10 @@ class WindowsUtils(base.BaseOSUtils):
 
     def get_default_gateway(self):
         default_routes = [r for r in self._get_ipv4_routing_table()
-                          if r[0] == '0.0.0.0']
+                          if r[0].decode() == '0.0.0.0']
         if default_routes:
-            return (default_routes[0][3], default_routes[0][2])
+            return (default_routes[0][3].decode(),
+                    default_routes[0][2].decode())
         else:
             return (None, None)
 

@@ -48,7 +48,7 @@ class HeatPlugin(base.BaseUserDataPlugin):
         self._check_dir(file_name)
 
         with open(file_name, 'wb') as f:
-            f.write(part.get_payload())
+            f.write(part.get_payload().encode())
 
         if part.get_filename() == self._heat_user_data_filename:
             return userdatautils.execute_user_data_script(part.get_payload())
