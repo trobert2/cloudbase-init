@@ -19,6 +19,7 @@ from oslo.config import cfg
 
 from cloudbaseinit.metadata.services import base
 from cloudbaseinit.openstack.common import log as logging
+from cloudbaseinit.utils import encoding
 from cloudbaseinit.utils import x509constants
 
 opts = [
@@ -48,7 +49,8 @@ class BaseOpenStackService(base.BaseMetadataService):
         path = posixpath.normpath(
             posixpath.join('openstack', version, 'meta_data.json'))
         data = self._get_cache_data(path)
-        return json.loads(data.decode('utf8'))
+        if data:
+            return json.loads(encoding.get_as_string(data))
 
     def get_instance_id(self):
         return self._get_meta_data().get('uuid')
