@@ -58,7 +58,8 @@ class HeatUserDataHandlerTests(unittest.TestCase):
                         create=True) as handle:
             response = self._heat.process(mock_part)
 
-            handle().write.assert_called_once_with(mock_part.get_payload())
+            handle().write.assert_called_once_with(
+                mock_part.get_payload().encode())
 
         path = os.path.join(CONF.heat_config_dir, filename)
         mock_check_dir.assert_called_once_with(path)

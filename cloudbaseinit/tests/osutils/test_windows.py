@@ -869,7 +869,7 @@ class WindowsUtilsTest(unittest.TestCase):
         mock_get_ipv4_routing_table.return_value = [routing_table]
         response = self._winutils.get_default_gateway()
         mock_get_ipv4_routing_table.assert_called_once_with()
-        if routing_table[0] == '0.0.0.0':
+        if routing_table[0] == '0.0.0.0'.encode():
             self.assertEqual((routing_table[3], routing_table[2]), response)
         else:
             self.assertEqual((None, None), response)
@@ -1084,8 +1084,8 @@ class WindowsUtilsTest(unittest.TestCase):
         if handle_disks == self._winutils.INVALID_HANDLE_VALUE or (
             last_error != self._winutils.ERROR_INSUFFICIENT_BUFFER) and not (
                 interface_detail) or (
-                    disk_handle == self._winutils.INVALID_HANDLE_VALUE) or (
-                        not io_control):
+                disk_handle == self._winutils.INVALID_HANDLE_VALUE) or (
+                not io_control):
 
             self.assertRaises(exception.CloudbaseInitException,
                               self._winutils.get_physical_disks)
