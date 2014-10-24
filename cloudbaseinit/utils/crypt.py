@@ -17,6 +17,7 @@
 import base64
 import ctypes
 import ctypes.util
+import six
 import struct
 import sys
 
@@ -160,6 +161,9 @@ class CryptManager(object):
 
         key_type = pub_key[offset:offset + key_type_len]
         offset += key_type_len
+        
+        if not isinstance(key_type, six.text_type):
+            key_type = key_type.decode('utf-8')
 
         if key_type not in ['ssh-rsa', 'rsa', 'rsa1']:
             raise CryptException('Unsupported SSH key type "%s". '

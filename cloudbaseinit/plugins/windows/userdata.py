@@ -17,6 +17,7 @@
 import email
 import gzip
 import io
+import six
 
 from cloudbaseinit.metadata.services import base as metadata_services_base
 from cloudbaseinit.openstack.common import log as logging
@@ -58,6 +59,8 @@ class UserDataPlugin(base.BasePlugin):
     def _process_user_data(self, user_data):
         plugin_status = base.PLUGIN_EXECUTION_DONE
         reboot = False
+        if not isinstance(user_data, six.text_type):
+            user_data = user_data.decode('utf-8')
 
         LOG.debug('User data content:\n%s' % user_data)
         if user_data.startswith('Content-Type: multipart'):
