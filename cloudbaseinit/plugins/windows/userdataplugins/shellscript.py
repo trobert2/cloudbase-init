@@ -33,7 +33,7 @@ class ShellScriptPlugin(base.BaseUserDataPlugin):
 
         try:
             with open(target_path, 'wb') as f:
-                f.write(part.get_payload())
+                f.write(part.get_payload().encode())
 
             return fileexecutils.exec_file(target_path)
         except Exception as ex:

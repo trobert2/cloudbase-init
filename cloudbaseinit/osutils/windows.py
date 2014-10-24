@@ -665,7 +665,7 @@ class WindowsUtils(base.BaseOSUtils):
 
     def get_default_gateway(self):
         default_routes = [r for r in self._get_ipv4_routing_table()
-                          if r[0] == '0.0.0.0']
+                          if r[0] == '0.0.0.0'.encode()]
         if default_routes:
             return (default_routes[0][3], default_routes[0][2])
         else:
@@ -730,7 +730,11 @@ class WindowsUtils(base.BaseOSUtils):
 
     def add_static_route(self, destination, mask, next_hop, interface_index,
                          metric):
-        args = ['ROUTE', 'ADD', destination, 'MASK', mask, next_hop]
+        if not isinstance(next_hop, six.text_type):
+            next_hop = next_hop.decode('utf-8')
+
+        args = ['ROUTE', 'ADD', destination, 'MASK', mask,
+                next_hop]
         (out, err, ret_val) = self.execute_process(args)
         # Cannot use the return value to determine the outcome
         if ret_val or err:

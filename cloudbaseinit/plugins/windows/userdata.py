@@ -17,6 +17,7 @@
 import email
 import gzip
 import io
+import six
 
 from cloudbaseinit.metadata.services import base as metadata_services_base
 from cloudbaseinit.openstack.common import log as logging
@@ -41,6 +42,9 @@ class UserDataPlugin(base.BasePlugin):
             return (base.PLUGIN_EXECUTION_DONE, False)
 
         user_data = self._check_gzip_compression(user_data)
+
+        if not isinstance(user_data, six.text_type):
+            user_data = user_data.decode('utf-8')
 
         return self._process_user_data(user_data)
 

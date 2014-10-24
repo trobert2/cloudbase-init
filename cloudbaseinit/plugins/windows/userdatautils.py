@@ -55,7 +55,7 @@ def execute_user_data_script(user_data):
 
     try:
         with open(target_path, 'wb') as f:
-            f.write(user_data)
+            f.write(user_data.encode())
 
         if powershell:
             (out, err,

@@ -54,7 +54,7 @@ class UserDataPluginTest(unittest.TestCase):
         else:
             mock_check_gzip_compression.assert_called_once_with(ret_val)
             mock_process_user_data.assert_called_once_with(
-                mock_check_gzip_compression.return_value)
+                mock_check_gzip_compression.return_value.decode.return_value)
             self.assertEqual(response, mock_process_user_data.return_value)
 
     def test_execute(self):

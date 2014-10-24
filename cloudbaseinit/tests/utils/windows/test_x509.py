@@ -278,11 +278,13 @@ class CryptoAPICertManagerTests(unittest.TestCase):
 
     def test_get_cert_base64(self):
         fake_cert_data = ''
-        fake_cert_data += x509constants.PEM_HEADER + '\n'
+        fake_cert_data += x509constants.PEM_HEADER.decode('utf-8') + '\n'
         fake_cert_data += 'fake cert' + '\n'
-        fake_cert_data += x509constants.PEM_FOOTER
+        fake_cert_data += x509constants.PEM_FOOTER.decode('utf-8')
+        fake_cert_data = fake_cert_data.encode()
+
         response = self._x509_manager._get_cert_base64(fake_cert_data)
-        self.assertEqual('fake cert', response)
+        self.assertEqual(b'fake cert', response)
 
     @mock.patch('cloudbaseinit.utils.windows.x509.free')
     @mock.patch('cloudbaseinit.utils.windows.x509.CryptoAPICertManager'
@@ -318,9 +320,9 @@ class CryptoAPICertManagerTests(unittest.TestCase):
         mock_create_unicode_buffer = self._ctypes.create_unicode_buffer
 
         fake_cert_data = ''
-        fake_cert_data += x509constants.PEM_HEADER + '\n'
+        fake_cert_data += x509constants.PEM_HEADER.decode('utf-8') + '\n'
         fake_cert_data += 'fake cert' + '\n'
-        fake_cert_data += x509constants.PEM_FOOTER
+        fake_cert_data += x509constants.PEM_FOOTER.decode('utf-8')
         mock_get_cert_base64.return_value = 'fake cert'
         mock_CryptStringToBinaryA.return_value = crypttstr
         mock_CertOpenStore.return_value = store_handle

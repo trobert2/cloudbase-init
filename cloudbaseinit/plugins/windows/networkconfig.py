@@ -51,6 +51,9 @@ class NetworkConfigPlugin(base.BasePlugin):
         LOG.debug('network config content:\n%s' % debian_network_conf)
 
         # TODO(alexpilotti): implement a proper grammar
+        if debian_network_conf:
+            debian_network_conf = debian_network_conf.decode(encoding='utf-8')
+
         m = re.search(r'iface eth0 inet static\s+'
                       r'address\s+(?P<address>[^\s]+)\s+'
                       r'netmask\s+(?P<netmask>[^\s]+)\s+'

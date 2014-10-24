@@ -33,7 +33,8 @@ class BaseOSUtils(object):
         # On Windows os.urandom() uses CryptGenRandom, which is a
         # cryptographically secure pseudorandom number generator
         b64_password = base64.b64encode(os.urandom(256))
-        return b64_password.replace('/', '').replace('+', '')[:length]
+        return b64_password.decode(encoding='utf-8').replace('/', '').replace(
+            '+', '')[:length]
 
     def execute_process(self, args, shell=True):
         p = subprocess.Popen(args,
