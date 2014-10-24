@@ -22,6 +22,7 @@ import uuid
 from ctypes import wintypes
 
 from cloudbaseinit.utils.windows import cryptoapi
+from cloudbaseinit.utils import encoding
 from cloudbaseinit.utils import x509constants
 
 malloc = ctypes.cdll.msvcrt.malloc
@@ -202,13 +203,13 @@ class CryptoAPICertManager(object):
                 free(subject_encoded)
 
     def _get_cert_base64(self, cert_data):
-        base64_cert_data = cert_data
+        base64_cert_data = cert_data.decode()
         if base64_cert_data.startswith(x509constants.PEM_HEADER):
             base64_cert_data = base64_cert_data[len(x509constants.PEM_HEADER):]
         if base64_cert_data.endswith(x509constants.PEM_FOOTER):
             base64_cert_data = base64_cert_data[:len(base64_cert_data) -
                                                 len(x509constants.PEM_FOOTER)]
-        return base64_cert_data.replace("\n", "")
+        return encoding.get_as_string(base64_cert_data).replace("\n", "")
 
     def import_cert(self, cert_data, machine_keyset=True,
                     store_name=STORE_NAME_MY):

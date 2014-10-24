@@ -17,12 +17,14 @@
 import email
 import gzip
 import io
+import six
 
 from cloudbaseinit.metadata.services import base as metadata_services_base
 from cloudbaseinit.openstack.common import log as logging
 from cloudbaseinit.plugins import base
 from cloudbaseinit.plugins.windows.userdataplugins import factory
 from cloudbaseinit.plugins.windows import userdatautils
+from cloudbaseinit.utils import encoding
 
 LOG = logging.getLogger(__name__)
 
@@ -59,12 +61,14 @@ class UserDataPlugin(base.BasePlugin):
         plugin_status = base.PLUGIN_EXECUTION_DONE
         reboot = False
 
-        LOG.debug('User data content:\n%s' % user_data)
-        if user_data.startswith('Content-Type: multipart'):
+        user_data_str = encoding.get_as_string(user_data)
+
+        LOG.debug('User data content:\n%s' % user_data_str)
+        if user_data.startswith(b'Content-Type: multipart'):
             user_data_plugins = factory.load_plugins()
             user_handlers = {}
 
-            for part in self._parse_mime(user_data):
+            for part in self._parse_mime(user_data_str):
                 (plugin_status, reboot) = self._process_part(part,
                                                              user_data_plugins,
                                                              user_handlers)
@@ -158,7 +162,7 @@ class UserDataPlugin(base.BasePlugin):
         return (plugin_status, reboot)
 
     def _process_non_multi_part(self, user_data):
-        if user_data.startswith('#cloud-config'):
+        if user_data.startswith(b'#cloud-config'):
             user_data_plugins = factory.load_plugins()
             cloud_config_plugin = user_data_plugins.get('text/cloud-config')
             ret_val = cloud_config_plugin.process(user_data)
